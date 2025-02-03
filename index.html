@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Les Petits Plats</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<header>
+    <div class="header-content">
+        <h1>Les Petits Plats</h1>
+        <p>CHERCHEZ PARMI PLUS DE 1500 RECETTES<br>DU QUOTIDIEN, SIMPLES ET DÉLICIEUSES</p>
+    </div>
+    <div class="search-container">
+        <input type="text" id="search" placeholder="Recherchez une recette, un ingrédient...">
+        <button id="search-btn">🔍</button>
+    </div>
+</header>
+
+<main>
+    <div class="filters">
+        <select id="ingredient-filter">
+            <option value="">Ingrédients</option>
+        </select>
+        <select id="appliance-filter">
+            <option value="">Appareils</option>
+        </select>
+        <select id="ustensil-filter">
+            <option value="">Ustensiles</option>
+        </select>
+    </div>
+
+    <div id="results" class="recipe-grid">
+        <!-- Résultats des recettes affichés ici -->
+    </div>
+</main>
+
+<script type="module" src="assets/js/script.js"></script>
+</body>
+</html>
