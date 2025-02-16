@@ -17,16 +17,47 @@ function populateFilters(recipesList) {
     const applianceSet = new Set();
     const ustensilSet = new Set();
 
+    // Map pour garder la version originale du texte (première occurrence)
+    const originalCaseMap = new Map();
+
     recipesList.forEach(recipe => {
-        recipe.ingredients.forEach(ing => ingredientSet.add(ing.ingredient));
-        applianceSet.add(recipe.appliance);
-        recipe.ustensils.forEach(ust => ustensilSet.add(ust));
+        recipe.ingredients.forEach(ing => {
+            const normalizedIngredient = ing.ingredient.toLowerCase();
+            if (!originalCaseMap.has(normalizedIngredient)) {
+                originalCaseMap.set(normalizedIngredient, ing.ingredient);
+            }
+            ingredientSet.add(normalizedIngredient);
+        });
+
+        const normalizedAppliance = recipe.appliance.toLowerCase();
+        if (!originalCaseMap.has(normalizedAppliance)) {
+            originalCaseMap.set(normalizedAppliance, recipe.appliance);
+        }
+        applianceSet.add(normalizedAppliance);
+
+        recipe.ustensils.forEach(ust => {
+            const normalizedUstensil = ust.toLowerCase();
+            if (!originalCaseMap.has(normalizedUstensil)) {
+                originalCaseMap.set(normalizedUstensil, ust);
+            }
+            ustensilSet.add(normalizedUstensil);
+        });
     });
 
-    // On passe maintenant la valeur par défaut souhaitée en second paramètre
-    populateSelect('ingredient-filter', ingredientSet, 'Ingrédient');
-    populateSelect('appliance-filter', applianceSet, 'Appareil');
-    populateSelect('ustensil-filter', ustensilSet, 'Ustensiles');
+    // Conversion des Sets en tableaux triés avec la casse d'origine
+    const sortedIngredients = Array.from(ingredientSet)
+        .sort()
+        .map(item => originalCaseMap.get(item));
+    const sortedAppliances = Array.from(applianceSet)
+        .sort()
+        .map(item => originalCaseMap.get(item));
+    const sortedUstensils = Array.from(ustensilSet)
+        .sort()
+        .map(item => originalCaseMap.get(item));
+
+    populateSelect('ingredient-filter', sortedIngredients, 'Ingrédient');
+    populateSelect('appliance-filter', sortedAppliances, 'Appareil');
+    populateSelect('ustensil-filter', sortedUstensils, 'Ustensiles');
 }
 
 // Fonction modifiée pour accepter le texte par défaut
