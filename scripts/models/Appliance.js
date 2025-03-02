@@ -1,6 +1,6 @@
 import { NormalizableItem } from './NormalizableItem.js';
 
-export class Ustensil extends NormalizableItem {
+export class Appliance extends NormalizableItem {
     constructor(name) {
         super(name);
     }

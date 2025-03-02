@@ -2,6 +2,7 @@ import { recipes as rawRecipes } from "./recipes.js";
 import { displayRecipes } from "./utils/display.js";
 import { performSearch } from "./utils/search.js";
 import { Recipe } from "./models/Recipe.js";
+import { NormalizableItem } from "./models/NormalizableItem.js";
 
 const recipes = rawRecipes.map(r => new Recipe(r.id, r.name, r.servings, r.time, r.description, r.image, r.ingredients, r.appliance, r.ustensils));
 
@@ -12,38 +13,27 @@ const selectedFilters = {
     ustensils: new Set()
 };
 
-// Fonction pour normaliser une chaîne (retirer les accents)
-function normalizeString(str) {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-// Fonction pour formater une option
-function formatOption(str) {
-    // Convertir en minuscules et retirer les espaces en début/fin
-    str = str.toLowerCase().trim();
-    
-    // Capitaliser la première lettre
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// Fonction pour comparer deux chaînes en ignorant les accents
-function compareStrings(a, b) {
-    const normalizedA = normalizeString(a.toLowerCase());
-    const normalizedB = normalizeString(b.toLowerCase());
-    return normalizedA.localeCompare(normalizedB);
-}
+let currentSearchQuery = '';
 
 // Fonction pour mettre à jour la recherche
-function updateSearch() {
-    const searchInput = document.getElementById("search");
-    const query = searchInput.value.toLowerCase().trim();
-    performSearch(
-        recipes,
-        query,
-        Array.from(selectedFilters.ingredients),
-        Array.from(selectedFilters.appliances),
-        Array.from(selectedFilters.ustensils)
-    );
+function updateSearch(event) {
+    if (event) {
+        currentSearchQuery = event.target.value.toLowerCase().trim();
+    }
+    
+    // Ne lancer la recherche que si la requête est vide ou a au moins 3 caractères
+    if (currentSearchQuery.length === 0 || currentSearchQuery.length >= 3) {
+        const searchResults = performSearch(
+            recipes,
+            currentSearchQuery,
+            Array.from(selectedFilters.ingredients),
+            Array.from(selectedFilters.appliances),
+            Array.from(selectedFilters.ustensils)
+        );
+        updateFiltersFromRecipes(searchResults);
+        return searchResults;
+    }
+    return recipes;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -51,12 +41,105 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ajouter l'écouteur d'événement pour la barre de recherche
     const searchInput = document.getElementById("search");
-    searchInput.addEventListener("input", () => {
-        updateSearch();
+    searchInput.addEventListener("input", (event) => {
+        updateSearch(event);
     });
 
     populateFilters(recipes);
 });
+
+// Fonction pour créer un tag de filtre
+function createFilterTag(filterId, value, displayText = value) {
+    const tag = document.createElement('span');
+    tag.classList.add('filter-tag');
+    tag.textContent = displayText;
+
+    const removeButton = document.createElement('button');
+    removeButton.classList.add('close-tag');
+    removeButton.innerHTML = '&times;';
+    removeButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        tag.remove();
+        handleFilterRemoval(filterId, value);
+    });
+
+    tag.appendChild(removeButton);
+    document.querySelector('.selected-filters').appendChild(tag);
+}
+
+// Fonction pour gérer la suppression d'un filtre
+function handleFilterRemoval(filterId, value) {
+    if (filterId === 'ingredient-filter') {
+        selectedFilters.ingredients.delete(value);
+    } else if (filterId === 'appliance-filter') {
+        selectedFilters.appliances.delete(value);
+    } else if (filterId === 'ustensil-filter') {
+        selectedFilters.ustensils.delete(value);
+    }
+
+    updateSearch();
+}
+
+// Fonction pour gérer la sélection d'un filtre
+function handleFilterSelection(filterId, value) {
+    const selectedValue = value.toLowerCase();
+    
+    if (filterId === 'ingredient-filter') {
+        selectedFilters.ingredients.add(selectedValue);
+    } else if (filterId === 'appliance-filter') {
+        selectedFilters.appliances.add(selectedValue);
+    } else if (filterId === 'ustensil-filter') {
+        selectedFilters.ustensils.add(selectedValue);
+    }
+
+    createFilterTag(filterId, selectedValue, value);
+    updateSearch();
+}
+
+// Fonction pour mettre à jour les filtres à partir des recettes filtrées
+function updateFiltersFromRecipes(recipesList) {
+    // Sauvegarder les sélections actuelles
+    const currentSelections = {
+        ingredients: new Set(selectedFilters.ingredients),
+        appliances: new Set(selectedFilters.appliances),
+        ustensils: new Set(selectedFilters.ustensils)
+    };
+
+    // Vider les filtres existants
+    selectedFilters.ingredients.clear();
+    selectedFilters.appliances.clear();
+    selectedFilters.ustensils.clear();
+
+    // Mettre à jour les filtres avec les nouvelles recettes
+    populateFilters(recipesList);
+
+    // Restaurer les sélections qui sont toujours valides
+    document.querySelector('.selected-filters').innerHTML = '';
+    
+    currentSelections.ingredients.forEach(ing => {
+        const option = document.querySelector(`#ingredient-filter .filter-options li[data-value="${ing}"]`);
+        if (option) {
+            selectedFilters.ingredients.add(ing);
+            createFilterTag('ingredient-filter', ing, option.textContent);
+        }
+    });
+
+    currentSelections.appliances.forEach(app => {
+        const option = document.querySelector(`#appliance-filter .filter-options li[data-value="${app}"]`);
+        if (option) {
+            selectedFilters.appliances.add(app);
+            createFilterTag('appliance-filter', app, option.textContent);
+        }
+    });
+
+    currentSelections.ustensils.forEach(ust => {
+        const option = document.querySelector(`#ustensil-filter .filter-options li[data-value="${ust}"]`);
+        if (option) {
+            selectedFilters.ustensils.add(ust);
+            createFilterTag('ustensil-filter', ust, option.textContent);
+        }
+    });
+}
 
 function populateFilters(recipesList) {
     const ingredientSet = new Set();
@@ -68,23 +151,25 @@ function populateFilters(recipesList) {
 
     recipesList.forEach(recipe => {
         recipe.ingredients.forEach(ing => {
-            const normalizedIngredient = ing.ingredient.toLowerCase();
+            const normalizedIngredient = ing.getNormalizedName();
             if (!originalCaseMap.has(normalizedIngredient)) {
-                originalCaseMap.set(normalizedIngredient, formatOption(ing.ingredient));
+                originalCaseMap.set(normalizedIngredient, ing.getFormattedName());
             }
             ingredientSet.add(normalizedIngredient);
         });
 
-        const normalizedAppliance = recipe.appliance.toLowerCase();
-        if (!originalCaseMap.has(normalizedAppliance)) {
-            originalCaseMap.set(normalizedAppliance, formatOption(recipe.appliance));
-        }
-        applianceSet.add(normalizedAppliance);
+        recipe.appliances.forEach(app => {
+            const normalizedAppliance = app.getNormalizedName();
+            if (!originalCaseMap.has(normalizedAppliance)) {
+                originalCaseMap.set(normalizedAppliance, app.getFormattedName());
+            }
+            applianceSet.add(normalizedAppliance);
+        });
 
         recipe.ustensils.forEach(ust => {
-            const normalizedUstensil = ust.toLowerCase();
+            const normalizedUstensil = ust.getNormalizedName();
             if (!originalCaseMap.has(normalizedUstensil)) {
-                originalCaseMap.set(normalizedUstensil, formatOption(ust));
+                originalCaseMap.set(normalizedUstensil, ust.getFormattedName());
             }
             ustensilSet.add(normalizedUstensil);
         });
@@ -92,13 +177,18 @@ function populateFilters(recipesList) {
 
     // Conversion des Sets en tableaux triés avec la casse d'origine
     const sortedIngredients = Array.from(ingredientSet)
-        .sort((a, b) => compareStrings(originalCaseMap.get(a), originalCaseMap.get(b)))
+        .sort((a, b) => NormalizableItem.normalize(originalCaseMap.get(a))
+            .localeCompare(NormalizableItem.normalize(originalCaseMap.get(b))))
         .map(item => originalCaseMap.get(item));
+
     const sortedAppliances = Array.from(applianceSet)
-        .sort((a, b) => compareStrings(originalCaseMap.get(a), originalCaseMap.get(b)))
+        .sort((a, b) => NormalizableItem.normalize(originalCaseMap.get(a))
+            .localeCompare(NormalizableItem.normalize(originalCaseMap.get(b))))
         .map(item => originalCaseMap.get(item));
+
     const sortedUstensils = Array.from(ustensilSet)
-        .sort((a, b) => compareStrings(originalCaseMap.get(a), originalCaseMap.get(b)))
+        .sort((a, b) => NormalizableItem.normalize(originalCaseMap.get(a))
+            .localeCompare(NormalizableItem.normalize(originalCaseMap.get(b))))
         .map(item => originalCaseMap.get(item));
 
     populateDropdown('ingredient-filter', sortedIngredients);
@@ -114,89 +204,13 @@ function populateDropdown(dropdownId, options) {
     function createOptionElement(option, isSelected = false) {
         const li = document.createElement('li');
         li.textContent = option;
+        li.dataset.value = option.toLowerCase();
         
         if (isSelected) {
             li.classList.add('selected');
-            const removeButton = document.createElement('button');
-            removeButton.classList.add('remove-option');
-            removeButton.innerHTML = '&times;';
-            removeButton.onclick = (event) => {
-                event.stopPropagation();
-                const selectedValue = option.toLowerCase();
-                
-                // Retirer le filtre de la collection appropriée
-                if (dropdownId === 'ingredient-filter') {
-                    selectedFilters.ingredients.delete(selectedValue);
-                } else if (dropdownId === 'appliance-filter') {
-                    selectedFilters.appliances.delete(selectedValue);
-                } else if (dropdownId === 'ustensil-filter') {
-                    selectedFilters.ustensils.delete(selectedValue);
-                }
-
-                // Retirer le tag correspondant
-                const tags = document.querySelectorAll('.filter-tag');
-                tags.forEach(tag => {
-                    if (tag.textContent.includes(option)) {
-                        tag.remove();
-                    }
-                });
-
-                // Mettre à jour l'affichage du dropdown
-                updateDropdownDisplay(filterInput.value.toLowerCase());
-                
-                // Mettre à jour la recherche
-                updateSearch();
-            };
-            li.appendChild(removeButton);
         } else {
             li.addEventListener('click', () => {
-                const selectedValue = option.toLowerCase();
-
-                // Create tag
-                const tag = document.createElement('span');
-                tag.classList.add('filter-tag');
-                tag.textContent = option;
-
-                const removeButton = document.createElement('button');
-                removeButton.classList.add('close-tag');
-                removeButton.innerHTML = '&times;';
-                removeButton.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    tag.remove();
-                    
-                    // Retirer le filtre de la collection appropriée
-                    if (dropdownId === 'ingredient-filter') {
-                        selectedFilters.ingredients.delete(selectedValue);
-                    } else if (dropdownId === 'appliance-filter') {
-                        selectedFilters.appliances.delete(selectedValue);
-                    } else if (dropdownId === 'ustensil-filter') {
-                        selectedFilters.ustensils.delete(selectedValue);
-                    }
-                    
-                    // Mettre à jour l'affichage du dropdown
-                    updateDropdownDisplay(filterInput.value.toLowerCase());
-                    
-                    // Mettre à jour la recherche
-                    updateSearch();
-                });
-                
-                tag.appendChild(removeButton);
-                document.querySelector('.selected-filters').appendChild(tag);
-
-                // Ajouter le filtre à la collection appropriée
-                if (dropdownId === 'ingredient-filter') {
-                    selectedFilters.ingredients.add(selectedValue);
-                } else if (dropdownId === 'appliance-filter') {
-                    selectedFilters.appliances.add(selectedValue);
-                } else if (dropdownId === 'ustensil-filter') {
-                    selectedFilters.ustensils.add(selectedValue);
-                }
-
-                // Mettre à jour l'affichage du dropdown
-                updateDropdownDisplay(filterInput.value.toLowerCase());
-                
-                // Mettre à jour la recherche
-                updateSearch();
+                handleFilterSelection(dropdownId, option);
             });
         }
 
@@ -208,11 +222,11 @@ function populateDropdown(dropdownId, options) {
         filterOptions.innerHTML = '';
 
         // Normaliser le terme de recherche
-        const normalizedSearchTerm = normalizeString(searchTerm.toLowerCase());
+        const normalizedSearchTerm = NormalizableItem.normalize(searchTerm);
 
         // Filtrer les options en fonction du terme de recherche
         const filteredOptions = options.filter(option =>
-            normalizeString(option.toLowerCase()).includes(normalizedSearchTerm)
+            NormalizableItem.normalize(option).includes(normalizedSearchTerm)
         );
 
         // Ajouter d'abord les éléments sélectionnés
@@ -247,6 +261,9 @@ function populateDropdown(dropdownId, options) {
 
     // Ajouter l'écouteur d'événements pour la recherche dans le dropdown
     filterInput.addEventListener('input', (event) => {
-        updateDropdownDisplay(event.target.value.toLowerCase());
+        const searchValue = event.target.value.toLowerCase();
+        if (searchValue.length >= 3 || searchValue.length === 0) {
+            updateDropdownDisplay(searchValue);
+        }
     });
 }

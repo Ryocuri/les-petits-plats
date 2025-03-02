@@ -1,4 +1,6 @@
 import { Ingredient } from "./Ingredient.js";
+import { Ustensil } from "./Ustensil.js";
+import { Appliance } from "./Appliance.js";
 
 export class Recipe {
     constructor(id, name, servings, time, description, image, ingredients, appliance, ustensils) {
@@ -9,7 +11,7 @@ export class Recipe {
         this.description = description;
         this.image = image;
         this.ingredients = ingredients.map(ing => new Ingredient(ing));
-        this.appliance = appliance;
-        this.ustensils = ustensils;
+        this.appliances = [appliance].map(app => new Appliance(app));
+        this.ustensils = ustensils.map(ust => new Ustensil(ust));
     }
 }
