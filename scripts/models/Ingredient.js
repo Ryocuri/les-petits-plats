@@ -1,9 +1,9 @@
-import { NormalizableItem } from './NormalizableItem.js';
+import { ElementFiltered } from './ElementFiltered.js';
 
-export class Ingredient extends NormalizableItem {
+export class Ingredient extends ElementFiltered {
     constructor({ ingredient, quantity = null, unit = "" }) {
         super(ingredient);
-        this.ingredient = ingredient;  // Garder pour la compatibilité
+        this.ingredient = ingredient;
         this.quantity = quantity;
         this.unit = unit;
     }

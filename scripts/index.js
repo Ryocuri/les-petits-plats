@@ -2,7 +2,8 @@ import { recipes as rawRecipes } from "./recipes.js";
 import { displayRecipes } from "./utils/display.js";
 import { performSearch } from "./utils/search.js";
 import { Recipe } from "./models/Recipe.js";
-import { NormalizableItem } from "./models/NormalizableItem.js";
+import { NormalizeItem } from "./utils/NormalizeItem.js";
+import { MIN_SEARCH_LENGTH, Z_INDEX, SELECTORS } from "./utils/constants.js";
 
 const recipes = rawRecipes.map(r => new Recipe(r.id, r.name, r.servings, r.time, r.description, r.image, r.ingredients, r.appliance, r.ustensils));
 
@@ -21,8 +22,13 @@ function updateSearch(event) {
         currentSearchQuery = event.target.value.toLowerCase().trim();
     }
     
-    // Ne lancer la recherche que si la requête est vide ou a au moins 3 caractères
-    if (currentSearchQuery.length === 0 || currentSearchQuery.length >= 3) {
+    // Vérifier si des filtres sont sélectionnés
+    const hasFilters = selectedFilters.ingredients.size > 0 || 
+                      selectedFilters.appliances.size > 0 || 
+                      selectedFilters.ustensils.size > 0;
+    
+    // Ne lancer la recherche que si: requête vide, requête >= 3 caractères, ou si des filtres sont sélectionnés
+    if (currentSearchQuery.length === 0 || currentSearchQuery.length >= MIN_SEARCH_LENGTH || hasFilters) {
         const searchResults = performSearch(
             recipes,
             currentSearchQuery,
@@ -33,6 +39,10 @@ function updateSearch(event) {
         updateFiltersFromRecipes(searchResults);
         return searchResults;
     }
+    // Si la requête est trop courte et qu'il n'y a pas de filtres,
+    // afficher toutes les recettes et mettre à jour les filtres
+    displayRecipes(recipes);
+    updateFiltersFromRecipes(recipes);
     return recipes;
 }
 
@@ -40,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     displayRecipes(recipes);
 
     // Ajouter l'écouteur d'événement pour la barre de recherche
-    const searchInput = document.getElementById("search");
+    const searchInput = document.querySelector(SELECTORS.SEARCH_INPUT);
     searchInput.addEventListener("input", (event) => {
         updateSearch(event);
     });
@@ -64,7 +74,7 @@ function createFilterTag(filterId, value, displayText = value) {
     });
 
     tag.appendChild(removeButton);
-    document.querySelector('.selected-filters').appendChild(tag);
+    document.querySelector(SELECTORS.SELECTED_FILTERS).appendChild(tag);
 }
 
 // Fonction pour gérer la suppression d'un filtre
@@ -114,7 +124,7 @@ function updateFiltersFromRecipes(recipesList) {
     populateFilters(recipesList);
 
     // Restaurer les sélections qui sont toujours valides
-    document.querySelector('.selected-filters').innerHTML = '';
+    document.querySelector(SELECTORS.SELECTED_FILTERS).innerHTML = '';
     
     currentSelections.ingredients.forEach(ing => {
         const option = document.querySelector(`#ingredient-filter .filter-options li[data-value="${ing}"]`);
@@ -177,18 +187,18 @@ function populateFilters(recipesList) {
 
     // Conversion des Sets en tableaux triés avec la casse d'origine
     const sortedIngredients = Array.from(ingredientSet)
-        .sort((a, b) => NormalizableItem.normalize(originalCaseMap.get(a))
-            .localeCompare(NormalizableItem.normalize(originalCaseMap.get(b))))
+        .sort((a, b) => NormalizeItem.apply(originalCaseMap.get(a))
+            .localeCompare(NormalizeItem.apply(originalCaseMap.get(b))))
         .map(item => originalCaseMap.get(item));
 
     const sortedAppliances = Array.from(applianceSet)
-        .sort((a, b) => NormalizableItem.normalize(originalCaseMap.get(a))
-            .localeCompare(NormalizableItem.normalize(originalCaseMap.get(b))))
+        .sort((a, b) => NormalizeItem.apply(originalCaseMap.get(a))
+            .localeCompare(NormalizeItem.apply(originalCaseMap.get(b))))
         .map(item => originalCaseMap.get(item));
 
     const sortedUstensils = Array.from(ustensilSet)
-        .sort((a, b) => NormalizableItem.normalize(originalCaseMap.get(a))
-            .localeCompare(NormalizableItem.normalize(originalCaseMap.get(b))))
+        .sort((a, b) => NormalizeItem.apply(originalCaseMap.get(a))
+            .localeCompare(NormalizeItem.apply(originalCaseMap.get(b))))
         .map(item => originalCaseMap.get(item));
 
     populateDropdown('ingredient-filter', sortedIngredients);
@@ -222,11 +232,11 @@ function populateDropdown(dropdownId, options) {
         filterOptions.innerHTML = '';
 
         // Normaliser le terme de recherche
-        const normalizedSearchTerm = NormalizableItem.normalize(searchTerm);
+        const normalizedSearchTerm = NormalizeItem.apply(searchTerm);
 
         // Filtrer les options en fonction du terme de recherche
         const filteredOptions = options.filter(option =>
-            NormalizableItem.normalize(option).includes(normalizedSearchTerm)
+            NormalizeItem.apply(option).includes(normalizedSearchTerm)
         );
 
         // Ajouter d'abord les éléments sélectionnés
@@ -262,7 +272,7 @@ function populateDropdown(dropdownId, options) {
     // Ajouter l'écouteur d'événements pour la recherche dans le dropdown
     filterInput.addEventListener('input', (event) => {
         const searchValue = event.target.value.toLowerCase();
-        if (searchValue.length >= 3 || searchValue.length === 0) {
+        if (searchValue.length >= MIN_SEARCH_LENGTH || searchValue.length === 0) {
             updateDropdownDisplay(searchValue);
         }
     });

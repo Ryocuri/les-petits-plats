@@ -1,6 +1,6 @@
-import { NormalizableItem } from './NormalizableItem.js';
+import { ElementFiltered } from './ElementFiltered.js';
 
-export class Appliance extends NormalizableItem {
+export class Appliance extends ElementFiltered {
     constructor(name) {
         super(name);
     }

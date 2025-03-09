@@ -1,5 +1,4 @@
 export function displayRecipes(recipesToDisplay) {
-    console.log("Recipes to display:", recipesToDisplay);
     document.getElementById("results").innerHTML = recipesToDisplay.map(recipe => `
         <article class="recipe-card">
             <span class="time-badge">${recipe.time} min</span>
