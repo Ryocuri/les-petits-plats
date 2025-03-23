@@ -9,7 +9,7 @@ export class ElementFiltered {
         return NormalizeItem.apply(this.name);
     }
 
-    getFormattedName() {
+    getCapitalizedName() {
         const trimmed = this.name.toLowerCase().trim();
         return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
     }

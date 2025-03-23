@@ -3,7 +3,7 @@ import { displayRecipes } from "./utils/display.js";
 import { performSearch } from "./utils/search.js";
 import { Recipe } from "./models/Recipe.js";
 import { NormalizeItem } from "./utils/NormalizeItem.js";
-import { MIN_SEARCH_LENGTH, Z_INDEX, SELECTORS } from "./utils/constants.js";
+import { MIN_SEARCH_LENGTH, SELECTORS } from "./utils/constants.js";
 
 const recipes = rawRecipes.map(r => new Recipe(r.id, r.name, r.servings, r.time, r.description, r.image, r.ingredients, r.appliance, r.ustensils));
 
@@ -163,7 +163,7 @@ function populateFilters(recipesList) {
         recipe.ingredients.forEach(ing => {
             const normalizedIngredient = ing.getNormalizedName();
             if (!originalCaseMap.has(normalizedIngredient)) {
-                originalCaseMap.set(normalizedIngredient, ing.getFormattedName());
+                originalCaseMap.set(normalizedIngredient, ing.getCapitalizedName());
             }
             ingredientSet.add(normalizedIngredient);
         });
@@ -171,7 +171,7 @@ function populateFilters(recipesList) {
         recipe.appliances.forEach(app => {
             const normalizedAppliance = app.getNormalizedName();
             if (!originalCaseMap.has(normalizedAppliance)) {
-                originalCaseMap.set(normalizedAppliance, app.getFormattedName());
+                originalCaseMap.set(normalizedAppliance, app.getCapitalizedName());
             }
             applianceSet.add(normalizedAppliance);
         });
@@ -179,7 +179,7 @@ function populateFilters(recipesList) {
         recipe.ustensils.forEach(ust => {
             const normalizedUstensil = ust.getNormalizedName();
             if (!originalCaseMap.has(normalizedUstensil)) {
-                originalCaseMap.set(normalizedUstensil, ust.getFormattedName());
+                originalCaseMap.set(normalizedUstensil, ust.getCapitalizedName());
             }
             ustensilSet.add(normalizedUstensil);
         });
