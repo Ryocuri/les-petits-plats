@@ -173,6 +173,18 @@ header h1 {
     line-height: 1.6;
 }
 
+.recipe-card .recipe-description {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+    max-height: 6.4em; /* 4 lines (1.6em line-height × 4) */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Number of lines to show */
+    -webkit-box-orient: vertical;
+}
+
 .recipe-card .ingredients {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -281,7 +293,8 @@ header h1 {
 .selected-filters {
     display: flex;
     flex-wrap: wrap;
-    margin-top: 10px;
+    margin: 0 auto;
+    max-width: 1200px;
 }
 
 .filter-tag {
