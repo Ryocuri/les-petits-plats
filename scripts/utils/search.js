@@ -1,7 +1,7 @@
 import { displayRecipes } from "./display.js";
 import { NormalizeItem } from "../utils/NormalizeItem.js";
 import { MIN_SEARCH_LENGTH } from "./constants.js";
-
+// todo : la recherche est relancée si query < 3 caractères (rechargement des images)
 export function performSearch(recipes, query, selectedIngredients, selectedAppliances, selectedUstensils) {
     // Commencer avec toutes les recettes
     let filteredRecipes = [...recipes];
@@ -28,7 +28,7 @@ export function performSearch(recipes, query, selectedIngredients, selectedAppli
     };
 
     // Appliquer la recherche textuelle si elle existe (longueur ≥ 3 ou si des filtres sont sélectionnés)
-    if (query && (query.length >= MIN_SEARCH_LENGTH || hasFilters)) {
+    if (query ? query.length >= MIN_SEARCH_LENGTH : hasFilters) {
         const normalizedQuery = NormalizeItem.apply(query);
         // Filtrer les recettes qui contiennent le terme de recherche
         filteredRecipes = recipes.filter(recipe =>
