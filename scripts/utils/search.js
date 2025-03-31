@@ -1,7 +1,7 @@
 import { displayRecipes } from "./display.js";
 import { NormalizeItem } from "../utils/NormalizeItem.js";
 import { MIN_SEARCH_LENGTH } from "./constants.js";
-// todo : la recherche est relancée si query < 3 caractères (rechargement des images)
+
 export function performSearch(recipes, query, selectedIngredients, selectedAppliances, selectedUstensils) {
     // Commencer avec toutes les recettes
     let filteredRecipes = [...recipes];
