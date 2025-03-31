@@ -1,5 +1,5 @@
 import { displayRecipes } from "./display.js";
-import { NormalizeItem } from "../utils/NormalizeItem.js";
+import { NormalizeItem } from "./NormalizeItem";
 import { MIN_SEARCH_LENGTH } from "./constants.js";
 
 export function performSearch(recipes, query, selectedIngredients, selectedAppliances, selectedUstensils) {
