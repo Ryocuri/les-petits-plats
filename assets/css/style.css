@@ -3,7 +3,7 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f8f8f8;
+    background-color: #EDEDED;
 }
 
 /* Header */
@@ -85,8 +85,20 @@ header h1 {
 /* Filter Buttons */
 .filters {
     display: flex;
-    justify-content: center;
-    margin-top: 20px;
+    justify-content: space-between;
+    margin: 20px 100px;
+    align-items: center;
+}
+
+.filter-dropdowns {
+    display: flex;
+    gap: 50px;
+}
+
+.recipe-count {
+    font-size: 22px;
+    font-weight: bold;
+    color: #1B1B1B;
 }
 
 .filters select {
@@ -101,16 +113,14 @@ header h1 {
 /* Recipe Grid */
 #results {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    margin: 0 100px;
 }
 
 /* Styles pour la carte de recette */
 .recipe-card {
-    width: 400px;
+    width: 100%;
     border-radius: 16px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     background: #fff;
@@ -205,16 +215,35 @@ header h1 {
 /* Custom Dropdown Styles */
 .custom-dropdown {
     position: relative;
-    margin: 0 10px;
 }
 
 .custom-dropdown .dropdown-header {
-    padding: 10px;
+    padding: 10px 80px 10px 10px;
     border-radius: 5px;
-    border: 1px solid #ccc;
+    border: none;
     background: white;
     cursor: pointer;
-    text-align: center;
+    text-align: left;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.custom-dropdown .dropdown-header::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #1B1B1B;
+    border-bottom: 2px solid #1B1B1B;
+    transform: translateY(-70%) rotate(45deg);
+    transition: transform 0.3s ease;
+}
+
+.custom-dropdown:hover .dropdown-header::after {
+    transform: translateY(-30%) rotate(225deg);
 }
 
 .custom-dropdown .dropdown-content {
@@ -236,24 +265,86 @@ header h1 {
 }
 
 .custom-dropdown .dropdown-content .filter-input {
-    width: 100%;
-    padding: 8px;
-    border: none;
-    border-bottom: 1px solid #ccc;
+    width: 72%;
+    padding: 8px 28px 8px 8px;
+    margin: 6px 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
     outline: none;
+    font-size: 13px;
+    position: relative;
+}
+
+.custom-dropdown .dropdown-content .input-container {
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.custom-dropdown .dropdown-content .input-container::after {
+    content: "";
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat;
+    background-size: contain;
+    transform: translateY(-50%);
+    opacity: 0.4;
+    pointer-events: none;
 }
 
 .custom-dropdown .dropdown-content .filter-options {
     list-style: none;
     padding: 0;
-    margin: 0;
-    max-height: 200px; /* Set a maximum height */
+    margin: 0 0 5px 0;
+    max-height: 180px; /* Slightly reduced max height */
     overflow-y: auto; /* Enable vertical scrollbar */
+    border-top: 1px solid #eee;
+}
+
+/* Container for selected items below the search input */
+.custom-dropdown .dropdown-content .selected-items {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+    max-height: 120px;
+    overflow-y: auto;
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.custom-dropdown .dropdown-content .selected-items li {
+    background-color: #FFD15B;
+    color: #1B1B1B;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 0 10px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.custom-dropdown .dropdown-content .selected-items li .remove-option {
+    background: none;
+    border: none;
+    color: #1B1B1B;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .custom-dropdown .dropdown-content .filter-options li {
-    padding: 8px 12px;
+    padding: 12px 15px;
     cursor: pointer;
+    font-size: 13px;
 }
 
 .custom-dropdown .dropdown-content .filter-options li:hover {
@@ -268,7 +359,8 @@ header h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #FFB800;
+    padding: 12px 15px;
+    margin-bottom: 2px;
 }
 
 .custom-dropdown .dropdown-content .filter-options li.selected:hover {
@@ -279,9 +371,16 @@ header h1 {
     background: none;
     border: none;
     color: #1B1B1B;
-    font-size: 18px;
+    font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
     padding: 0 5px;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .custom-dropdown .dropdown-content .filter-options li.selected .remove-option:hover {
@@ -293,14 +392,13 @@ header h1 {
 .selected-filters {
     display: flex;
     flex-wrap: wrap;
-    margin: 0 auto;
-    max-width: 1200px;
+    margin: 0 100px 20px;
 }
 
 .filter-tag {
     background-color: #FFD15B;
-    padding: 5px 10px;
-    border-radius: 20px;
+    padding: 12px 18px;
+    border-radius: 8px;
     margin: 5px;
     font-size: 14px;
     display: flex;
@@ -317,6 +415,7 @@ header h1 {
     cursor: pointer;
     padding: 0;
     line-height: 1;
+    margin-left: 30px;
 }
 
 .close-tag:hover {

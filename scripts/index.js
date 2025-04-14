@@ -16,6 +16,24 @@ const selectedFilters = {
 
 let currentSearchQuery = '';
 
+// Fonction pour mettre à jour le compteur de recettes
+function updateRecipeCount(count) {
+    const recipeCountElement = document.querySelector('.recipe-count');
+    if (recipeCountElement) {
+        // Affiche le nombre réel de recettes seulement si des filtres sont appliqués ou si une recherche est active
+        const hasFilters = selectedFilters.ingredients.size > 0 ||
+                          selectedFilters.appliances.size > 0 ||
+                          selectedFilters.ustensils.size > 0;
+        
+        if (hasFilters || (currentSearchQuery && currentSearchQuery.length > 0)) {
+            recipeCountElement.textContent = `${count} recette${count > 1 ? 's' : ''}`;
+        } else {
+            // Sinon, affiche toujours "1500 recettes" par défaut
+            recipeCountElement.textContent = "1500 recettes";
+        }
+    }
+}
+
 // Fonction pour mettre à jour la recherche
 function updateSearch(event) {
     if (event) {
@@ -37,17 +55,20 @@ function updateSearch(event) {
             Array.from(selectedFilters.ustensils)
         );
         updateFiltersFromRecipes(searchResults);
+        updateRecipeCount(searchResults.length);
         return searchResults;
     }
     // Si la requête est trop courte et qu'il n'y a pas de filtres,
     // afficher toutes les recettes et mettre à jour les filtres
     displayRecipes(recipes);
     updateFiltersFromRecipes(recipes);
+    updateRecipeCount(recipes.length);
     return recipes;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     displayRecipes(recipes);
+    updateRecipeCount(recipes.length);
 
     // Ajouter l'écouteur d'événement pour la barre de recherche
     const searchInput = document.querySelector(SELECTORS.SEARCH_INPUT);
@@ -56,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     populateFilters(recipes);
+    updateAllDropdowns(); // Make sure selected items are displayed on page load
 });
 
 // Fonction pour créer un tag de filtre
@@ -75,6 +97,64 @@ function createFilterTag(filterId, value, displayText = value) {
 
     tag.appendChild(removeButton);
     document.querySelector(SELECTORS.SELECTED_FILTERS).appendChild(tag);
+    
+    // Update all dropdowns to show selected items
+    updateAllDropdowns();
+}
+
+// Helper function to update all dropdowns with current selections
+function updateAllDropdowns() {
+    // Get the list of all unique tags from all dropdowns
+    const allOptions = {};
+    document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+        const dropdownId = dropdown.id;
+        const optionsContainer = dropdown.querySelector('.filter-options');
+        Array.from(optionsContainer.children).forEach(option => {
+            const value = option.dataset.value;
+            if (!allOptions[dropdownId]) allOptions[dropdownId] = {};
+            allOptions[dropdownId][value] = option.textContent;
+        });
+    });
+    
+    // Update each dropdown
+    document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+        const dropdownId = dropdown.id;
+        let selectedItems = new Set();
+        
+        if (dropdownId === 'ingredient-filter') {
+            selectedItems = selectedFilters.ingredients;
+        } else if (dropdownId === 'appliance-filter') {
+            selectedItems = selectedFilters.appliances;
+        } else if (dropdownId === 'ustensil-filter') {
+            selectedItems = selectedFilters.ustensils;
+        }
+        
+        // Update the selected-items container
+        const selectedItemsContainer = dropdown.querySelector('.selected-items');
+        if (selectedItemsContainer) {
+            selectedItemsContainer.innerHTML = '';
+            
+            selectedItems.forEach(value => {
+                if (!allOptions[dropdownId] || !allOptions[dropdownId][value]) return;
+                
+                const displayText = allOptions[dropdownId][value];
+                const selectedItem = document.createElement('li');
+                selectedItem.textContent = displayText;
+                selectedItem.dataset.value = value;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.classList.add('remove-option');
+                removeBtn.innerHTML = '&times;';
+                removeBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    handleFilterRemoval(dropdownId, value);
+                });
+                
+                selectedItem.appendChild(removeBtn);
+                selectedItemsContainer.appendChild(selectedItem);
+            });
+        }
+    });
 }
 
 // Fonction pour gérer la suppression d'un filtre
@@ -88,6 +168,7 @@ function handleFilterRemoval(filterId, value) {
     }
 
     updateSearch();
+    updateAllDropdowns();
 }
 
 // Fonction pour gérer la sélection d'un filtre
@@ -104,6 +185,7 @@ function handleFilterSelection(filterId, value) {
 
     createFilterTag(filterId, selectedValue, value);
     updateSearch();
+    updateAllDropdowns();
 }
 
 // Fonction pour mettre à jour les filtres à partir des recettes filtrées
@@ -210,6 +292,18 @@ function populateDropdown(dropdownId, options) {
     const dropdown = document.getElementById(dropdownId);
     const filterInput = dropdown.querySelector('.filter-input');
     const filterOptions = dropdown.querySelector('.filter-options');
+    
+    // Create selected items container if it doesn't exist
+    let selectedItemsContainer = dropdown.querySelector('.selected-items');
+    if (!selectedItemsContainer) {
+        selectedItemsContainer = document.createElement('div');
+        selectedItemsContainer.classList.add('selected-items');
+        const inputContainer = dropdown.querySelector('.input-container');
+        inputContainer.insertAdjacentElement('afterend', selectedItemsContainer);
+    } else {
+        // Clear existing selected items
+        selectedItemsContainer.innerHTML = '';
+    }
 
     function createOptionElement(option, isSelected = false) {
         const li = document.createElement('li');
@@ -217,14 +311,38 @@ function populateDropdown(dropdownId, options) {
         li.dataset.value = option.toLowerCase();
         
         if (isSelected) {
+            // For selected items, we'll create a separate element for the selected-items container
+            // Create a copy for the selected-items container
+            const selectedItem = document.createElement('li');
+            selectedItem.textContent = option;
+            selectedItem.dataset.value = option.toLowerCase();
+            
+            // Add remove button to the selected item
+            const removeBtn = document.createElement('button');
+            removeBtn.classList.add('remove-option');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                handleFilterRemoval(dropdownId, option.toLowerCase());
+            });
+            
+            selectedItem.appendChild(removeBtn);
+            
+            // Add to selected items container
+            selectedItemsContainer.appendChild(selectedItem);
+            
+            // Create regular option element but mark it as selected
             li.classList.add('selected');
+            li.addEventListener('click', () => {
+                handleFilterRemoval(dropdownId, option.toLowerCase());
+            });
+            return li; // We still want it in the main list, but marked as selected
         } else {
             li.addEventListener('click', () => {
                 handleFilterSelection(dropdownId, option);
             });
+            return li;
         }
-
-        return li;
     }
 
     function updateDropdownDisplay(searchTerm = '') {
@@ -239,7 +357,7 @@ function populateDropdown(dropdownId, options) {
             NormalizeItem.apply(option).includes(normalizedSearchTerm)
         );
 
-        // Ajouter d'abord les éléments sélectionnés
+        // Process all options - selected items go to the top container, unselected to the list
         filteredOptions.forEach(option => {
             const isSelected = (
                 (dropdownId === 'ingredient-filter' && selectedFilters.ingredients.has(option.toLowerCase())) ||
@@ -247,21 +365,9 @@ function populateDropdown(dropdownId, options) {
                 (dropdownId === 'ustensil-filter' && selectedFilters.ustensils.has(option.toLowerCase()))
             );
 
-            if (isSelected) {
-                filterOptions.appendChild(createOptionElement(option, true));
-            }
-        });
-
-        // Puis ajouter les éléments non sélectionnés
-        filteredOptions.forEach(option => {
-            const isSelected = (
-                (dropdownId === 'ingredient-filter' && selectedFilters.ingredients.has(option.toLowerCase())) ||
-                (dropdownId === 'appliance-filter' && selectedFilters.appliances.has(option.toLowerCase())) ||
-                (dropdownId === 'ustensil-filter' && selectedFilters.ustensils.has(option.toLowerCase()))
-            );
-
-            if (!isSelected) {
-                filterOptions.appendChild(createOptionElement(option, false));
+            const element = createOptionElement(option, isSelected);
+            if (element) {
+                filterOptions.appendChild(element);
             }
         });
     }
